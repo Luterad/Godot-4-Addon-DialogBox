@@ -1,5 +1,5 @@
 @tool
-extends Node #EditorPlugin
+extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
 ## 
@@ -29,6 +29,15 @@ enum DialogueVoices {
 	SINGLE, ## Single voice line for each text line.[br]Recommendation: loop your [AudioStream] file.
 	EACH_LINE ## Several voice lines for each text line.[br]Recommendation: don't loop your [AudioStream] file.
 }
+
+var bg_image: TextureRect = TextureRect.new()
+var bg_rim: TextureProgressBar = TextureProgressBar.new()
+var speaker: VSplitContainer = VSplitContainer.new()
+var name: Label = Label.new()
+var speaking: HSplitContainer = HSplitContainer.new()
+var lines: RichTextLabel = RichTextLabel.new()
+var face: TextureRect = TextureRect.new()
+var voice: AudioStreamPlayer = AudioStreamPlayer.new()
 
 @export var continue_timer: float = 1.0 ## If [member input_use_trigger] is [code]false[/code], after this time speaking will continue.
 
@@ -130,6 +139,16 @@ enum DialogueVoices {
 	set(value): if dialogue_use_voices != DialogueVoices.NO:
 		dialogue_voices = value
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
+
+func _enter_tree() -> void: pass
+#add_child(bg_image)
+#add_child(bg_rim)
+#add_child(speaker)
+#speaker.add_child(name)
+#speaker.add_child(speaking)
+#speaking.add_child(lines)
+#speaking.add_child(face)
+#speaking.add_child(voice)
 
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
 	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")
