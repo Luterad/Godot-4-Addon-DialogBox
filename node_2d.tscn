@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://s0wycb34anpw"]
+
+[ext_resource type="Script" path="res://dialog_box.gd" id="1_elrkp"]
+
+[sub_resource type="SystemFont" id="SystemFont_yq7uj"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="DialogBox" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_elrkp")
+text_font = SubResource("SystemFont_yq7uj")
