@@ -1,5 +1,5 @@
 @tool
-extends Node #EditorPlugin
+extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
 ## 
@@ -30,45 +30,54 @@ enum DialogueVoices {
 	EACH_LINE ## Several voice lines for each text line.[br]Recommendation: don't loop your [AudioStream] file.
 }
 
+var bg_image: TextureRect = TextureRect.new()
+var bg_rim: TextureProgressBar = TextureProgressBar.new()
+var speaker: VSplitContainer = VSplitContainer.new()
+var name_dialoque: Label = Label.new()
+var speaking: HSplitContainer = HSplitContainer.new()
+var lines_dialoque: RichTextLabel = RichTextLabel.new()
+var face_dialoque: TextureRect = TextureRect.new()
+var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
+
 @export var continue_timer: float = 1.0 ## If [member input_use_trigger] is [code]false[/code], after this time speaking will continue.
 
 ## Texture of the backgroung of the dialog box.
 @export var bg_texture: Texture2D:
 	set(value): $BackgroundImage.texture = value
 
-@export_group("Text", "text_")
+@export_group("lines_dialoque", "text_")
 ## Font for text in dialogues.
 @export var text_font: Font = SystemFont.new():
 	set(value):
 		text_font = value
-		$Speaker/Name.add_theme_font_override("font", value)
-		$Speaker/Speaking/Text.add_theme_font_override("normal_font", value)
-		$Speaker/Speaking/Text.add_theme_font_override("bold_font", value)
-		$Speaker/Speaking/Text.add_theme_font_override("italics_font", value)
-		$Speaker/Speaking/Text.add_theme_font_override("bold_italics_font", value)
-		$Speaker/Speaking/Text.add_theme_font_override("mono_font", value)
+		name_dialoque.add_theme_font_override("font", value)
+		lines_dialoque.add_theme_font_override("normal_font", value)
+		lines_dialoque.add_theme_font_override("bold_font", value)
+		lines_dialoque.add_theme_font_override("italics_font", value)
+		lines_dialoque.add_theme_font_override("bold_italics_font", value)
+		lines_dialoque.add_theme_font_override("mono_font", value)
 
-## Text size in pixels for text in dialogues.
+## lines_dialoque size in pixels for text in dialogues.
 @export var text_size: int = 16:
 	set(value):
 		text_size = value
-		$Speaker/Speaking/Text.add_theme_font_size_override("normal_font_size", value)
-		$Speaker/Speaking/Text.add_theme_font_size_override("bold_font_size", value)
-		$Speaker/Speaking/Text.add_theme_font_size_override("italics_font_size", value)
-		$Speaker/Speaking/Text.add_theme_font_size_override("bold_italics_font_size", value)
-		$Speaker/Speaking/Text.add_theme_font_size_override("mono_font_size", value)
+		lines_dialoque.add_theme_font_size_override("normal_font_size", value)
+		lines_dialoque.add_theme_font_size_override("bold_font_size", value)
+		lines_dialoque.add_theme_font_size_override("italics_font_size", value)
+		lines_dialoque.add_theme_font_size_override("bold_italics_font_size", value)
+		lines_dialoque.add_theme_font_size_override("mono_font_size", value)
 
 ## Color for text in dialogues.
 @export var text_color: Color = Color.WHITE:
-	set(value): text_color = value; $Speaker/Speaking/Text.add_theme_color_override("default_color", value)
+	set(value): text_color = value; lines_dialoque.add_theme_color_override("default_color", value)
 
 ## Color for name in dialogues.
 @export var text_name_color: Color = Color.WHITE:
-	set(value): text_name_color = value; $Speaker/Name.add_theme_color_override("font_color", value)
+	set(value): text_name_color = value; name_dialoque.add_theme_color_override("font_color", value)
 
-## Text size in pixels for name in dialogues.
+## lines_dialoque size in pixels for name in dialogues.
 @export var text_name_size: int = 27:
-	set(value): text_name_size = value; $Speaker/Name.add_theme_font_size_override("font_size", value)
+	set(value): text_name_size = value; name_dialoque.add_theme_font_size_override("font_size", value)
 
 @export var text_characters_per_second: int = 10 ## Amount of characters (symbols) showed per second.
 @export var text_speed: float = 1.0 ## Speed scale for text lines in dialogues.
@@ -85,7 +94,7 @@ enum DialogueVoices {
 	set(value): if input_use_trigger: input_trigger = value
 
 @export_group("Dialogue", "dialogue_")
-## Text lines.
+## lines_dialoque lines.
 @export var dialogue_lines: Array[String] = []:
 	set(value):
 		dialogue_lines = value
@@ -131,43 +140,53 @@ enum DialogueVoices {
 		dialogue_voices = value
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
 
+func _enter_tree() -> void:
+	add_child(bg_image)
+	add_child(bg_rim)
+	add_child(speaker)
+	speaker.add_child(name_dialoque)
+	speaker.add_child(speaking)
+	speaking.add_child(lines_dialoque)
+	speaking.add_child(face_dialoque)
+	speaking.add_child(voice_dialoque)
+
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
 	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")
 
 func _on_resetting(use_names: DialogueNames, use_faces: bool, use_voices: DialogueVoices) -> void:
 	dialogue_use_names = use_names; dialogue_use_faces = use_faces; dialogue_use_voices = use_voices
-	$Speaker/Speaking/Face.visible = dialogue_use_faces
+	face_dialoque.visible = dialogue_use_faces
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue():
 	var frame: int = 0
-	$Speaker/Name.text = ""
+	name_dialoque.text = ""
 	
 	for line in dialogue_lines:
 		#Preparing
-		$Speaker/Speaking/Text.text = line
-		$Speaker/Speaking/Text.visible_characters = 0
-		if dialogue_use_faces: $Speaker/Speaking/Face.texture = dialogue_faces[frame]
+		lines_dialoque.text = line
+		lines_dialoque.visible_characters = 0
+		if dialogue_use_faces: face_dialoque.texture = dialogue_faces[frame]
 #		if dialogue_use_names != DialogueNames.NO:
 		match dialogue_use_names:
-			DialogueNames.MONOLOGUE: $Speaker/Name.text = dialogue_names[0]
-			DialogueNames.DIALOGUE: $Speaker/Name.text = dialogue_names[frame]
+			DialogueNames.MONOLOGUE: name_dialoque.text = dialogue_names[0]
+			DialogueNames.DIALOGUE: name_dialoque.text = dialogue_names[frame]
 		match dialogue_use_voices:
-			DialogueVoices.NO: $Speaker/Speaking/Voice.stream = null
-			DialogueVoices.SINGLE: $Speaker/Speaking/Voice.stream = dialogue_voices[0]
-			DialogueVoices.EACH_LINE: $Speaker/Speaking/Voice.stream = dialogue_voices[frame]
+			DialogueVoices.NO: voice_dialoque.stream = null
+			DialogueVoices.SINGLE: voice_dialoque.stream = dialogue_voices[0]
+			DialogueVoices.EACH_LINE: voice_dialoque.stream = dialogue_voices[frame]
 		#Printing
-		$Speaker/Speaking/Voice.playing = true
-		print("\"" + $Speaker/Name.text +"\": \"" + line +"\"")
+		voice_dialoque.playing = true
+		print("\"" + name_dialoque.text +"\": \"" + line +"\"")
 		for char in line.split():
-			$Speaker/Speaking/Text.visible_characters += 1
+			lines_dialoque.visible_characters += 1
 			await get_tree().create_timer(1/text_characters_per_second*text_speed).timeout
 		#Transition
 		if input_use_trigger: await self.trigger_pressed
 		else: await get_tree().create_timer(continue_timer).timeout
 		frame += 1
-	$Speaker/Speaking/Voice.playing = false
-	$Speaker/Speaking/Voice.stream = null
-	$Speaker/Speaking/Face.texture = null
-	$Speaker/Name.text = ""
-	$Speaker/Speaking/Text.text = ""
+	voice_dialoque.playing = false
+	voice_dialoque.stream = null
+	face_dialoque.texture = null
+	name_dialoque.text = ""
+	lines_dialoque.text = ""
