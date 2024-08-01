@@ -39,13 +39,17 @@ var lines_dialoque: RichTextLabel = RichTextLabel.new()
 var face_dialoque: TextureRect = TextureRect.new()
 var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 
+@export_group("Settings")
+
+@export_group("Functionality")
+
 @export var continue_timer: float = 1.0 ## If [member input_use_trigger] is [code]false[/code], after this time speaking will continue.
 
 ## Texture of the backgroung of the dialog box.
 @export var bg_texture: Texture2D:
 	set(value): $BackgroundImage.texture = value
 
-@export_group("lines_dialoque", "text_")
+@export_subgroup("Text", "text_")
 ## Font for text in dialogues.
 @export var text_font: Font = SystemFont.new():
 	set(value):
@@ -82,7 +86,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 @export var text_characters_per_second: int = 10 ## Amount of characters (symbols) showed per second.
 @export var text_speed: float = 1.0 ## Speed scale for text lines in dialogues.
 
-@export_group("Input", "input_")
+@export_subgroup("Input", "input_")
 ## If [code]true[/code], you'll need to trigger action [member input_trigger] for continue speaking.
 @export var input_use_trigger: bool = false:
 	set(value):
@@ -93,7 +97,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 @export var input_trigger: StringName = &"":
 	set(value): if input_use_trigger: input_trigger = value
 
-@export_group("Dialogue", "dialogue_")
+@export_subgroup("Dialogue", "dialogue_")
 ## lines_dialoque lines.
 @export var dialogue_lines: Array[String] = []:
 	set(value):
@@ -141,6 +145,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
 
 func _enter_tree() -> void:
+	#Adding nodes
 	add_child(bg_image)
 	add_child(bg_rim)
 	add_child(speaker)
@@ -149,6 +154,28 @@ func _enter_tree() -> void:
 	speaking.add_child(lines_dialoque)
 	speaking.add_child(face_dialoque)
 	speaking.add_child(voice_dialoque)
+	
+	#Naming nodes
+	bg_image.name = "BG Image"
+	bg_rim.name = "BG Rim"
+	speaker.name = "Speaker"
+	name_dialoque.name = "Name"
+	speaking.name = "Speaking"
+	lines_dialoque.name = "Lines"
+	face_dialoque.name = "Face"
+	voice_dialoque.name = "Voice"
+	
+	#Undeniable settings
+	bg_image.set_anchors_preset(Control.PRESET_FULL_RECT)
+	
+	bg_rim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rim.nine_patch_stretch = true
+	bg_rim.stretch_margin_left = 15
+	bg_rim.stretch_margin_top = 15
+	bg_rim.stretch_margin_right = 15
+	bg_rim.stretch_margin_bottom = 15
+	
+	
 
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
 	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")

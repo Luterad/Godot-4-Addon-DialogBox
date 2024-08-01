@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://d34csnpxmg0uv"]
+[gd_scene load_steps=4 format=3 uid="uid://d34csnpxmg0uv"]
 
-[ext_resource type="Script" path="res://addons/dialog_box/dialog_box.gd" id="1_1sfiq"]
+[ext_resource type="Script" path="res://dialog_box.gd" id="1_1sfiq"]
+[ext_resource type="Texture2D" uid="uid://bmic0h4l7rjpr" path="res://icon.svg" id="2_3gvwb"]
 
 [sub_resource type="SystemFont" id="SystemFont_u0c5l"]
 
@@ -11,12 +12,28 @@ script = ExtResource("1_1sfiq")
 text_font = SubResource("SystemFont_u0c5l")
 
 [node name="BackgroundImage" type="TextureRect" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="TextureProgressBar" type="TextureProgressBar" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+nine_patch_stretch = true
+stretch_margin_left = 15
+stretch_margin_top = 15
+stretch_margin_right = 15
+stretch_margin_bottom = 15
+texture_under = ExtResource("2_3gvwb")
 
 [node name="Speaker" type="VSplitContainer" parent="."]
 layout_mode = 1
