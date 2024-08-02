@@ -61,7 +61,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		lines_dialoque.add_theme_font_override("bold_italics_font", value)
 		lines_dialoque.add_theme_font_override("mono_font", value)
 
-## lines_dialoque size in pixels for text in dialogues.
+## Text size in pixels for text in dialogues.
 @export var text_size: int = 16:
 	set(value):
 		text_size = value
@@ -79,7 +79,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 @export var text_name_color: Color = Color.WHITE:
 	set(value): text_name_color = value; name_dialoque.add_theme_color_override("font_color", value)
 
-## lines_dialoque size in pixels for name in dialogues.
+## Text size in pixels for name in dialogues.
 @export var text_name_size: int = 27:
 	set(value): text_name_size = value; name_dialoque.add_theme_font_size_override("font_size", value)
 
@@ -98,7 +98,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 	set(value): if input_use_trigger: input_trigger = value
 
 @export_subgroup("Dialogue", "dialogue_")
-## lines_dialoque lines.
+## Text lines.
 @export var dialogue_lines: Array[String] = []:
 	set(value):
 		dialogue_lines = value
@@ -175,9 +175,22 @@ func _enter_tree() -> void:
 	bg_rim.stretch_margin_right = 15
 	bg_rim.stretch_margin_bottom = 15
 	
-#speaker.dragger_visibility = DraggerVisibility.DRAGGER_HIDDEN_COLLAPSE
-#speaker.set_anchors_preset(LayoutPreset.PRESET_FULL_RECT)
+	speaker.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
+	speaker.set_anchors_preset(Control.PRESET_FULL_RECT)
 	
+	name_dialoque.set_v_size_flags(Control.SIZE_EXPAND_FILL)
+	name_dialoque.size_flags_stretch_ratio = 0
+	
+	speaking.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
+	speaking.set_v_size_flags(Control.SIZE_EXPAND_FILL)
+	
+	lines_dialoque.bbcode_enabled = true
+	lines_dialoque.scroll_active = false
+	lines_dialoque.set_h_size_flags(Control.SIZE_EXPAND_FILL)
+	
+	face_dialoque.stretch_mode = TextureRect.STRETCH_KEEP
+	face_dialoque.set_v_size_flags(Control.SIZE_EXPAND_FILL)
+	face_dialoque.stretch_radio = 0
 
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
 	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")
