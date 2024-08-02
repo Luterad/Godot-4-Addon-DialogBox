@@ -175,6 +175,8 @@ func _enter_tree() -> void:
 	bg_rim.stretch_margin_right = 15
 	bg_rim.stretch_margin_bottom = 15
 	
+#speaker.dragger_visibility = DraggerVisibility.DRAGGER_HIDDEN_COLLAPSE
+#speaker.set_anchors_preset(LayoutPreset.PRESET_FULL_RECT)
 	
 
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
