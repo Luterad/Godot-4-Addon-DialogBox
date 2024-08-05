@@ -48,6 +48,7 @@ var face_dialoque: TextureRect = TextureRect.new()
 var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 
 @export_group("Settings")
+
 @export var design_mode: DesignMode = DesignMode.NO#:
 #set(value):
 #design_mode = value
@@ -64,6 +65,13 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 #DesignMode.BOTH:
 #bg_image.show()
 #bg_rim.show()
+
+@export_subgroup("Rim offsets", "bg_rim_offset_")
+@export_range(0, 1, 0.1, "or_greater") var bg_rim_offset_top: float#:
+#set(value):
+#bg_rim_offset_top = value
+#bg_rim.
+
 
 @export_group("Functionality")
 
