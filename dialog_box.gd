@@ -19,6 +19,14 @@ signal resetting(use_names: DialogueNames, use_faces: bool, use_voices: Dialogue
 signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [input_use_trigger] is [code]true[/code]).
 signal dialogue_ended ## Signal which emit's when dialogue is ends.
 
+## Enumeration for setting design mode of the Dialog box.
+enum DesignMode {
+NO, ## No background image nor rim.
+IMAGE, ## Adds background image for box which texture sets in [member texture_bg_image].
+RIM, ## Adds rim around box which texture sets in [member texture_rim]
+BOTH ## Adds both background image and rim for box which textures sets in [member texture_bg_image] and [member texture_rim] respectively.
+}
+
 enum DialogueNames {
 	NO, ## No names.
 	MONOLOGUE, ## Single speaker for each text line.
@@ -40,6 +48,22 @@ var face_dialoque: TextureRect = TextureRect.new()
 var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 
 @export_group("Settings")
+@export var design_mode: DesignMode = DesignMode.NO#:
+#set(value):
+#design_mode = value
+#match value:
+#DesignMode.NO:
+#bg_image.hide()
+#bg_rim.hide()
+#DesignMode.IMAGE:
+#bg_image.show()
+#bg_rim.hide()
+#DesignMode.RIM:
+#bg_image.hide()
+#bg_rim.show()
+#DesignMode.BOTH:
+#bg_image.show()
+#bg_rim.show()
 
 @export_group("Functionality")
 
