@@ -19,6 +19,14 @@ signal resetting(use_names: DialogueNames, use_faces: bool, use_voices: Dialogue
 signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [input_use_trigger] is [code]true[/code]).
 signal dialogue_ended ## Signal which emit's when dialogue is ends.
 
+## Enumeration for setting design mode of the Dialog box.
+enum DesignMode {
+	NO, ## No background image nor rim.
+	IMAGE, ## Adds background image for box which texture sets in [member texture_bg_image].
+	RIM, ## Adds rim around box which texture sets in [member texture_rim]
+	BOTH ## Adds both background image and rim for box which textures sets in [member texture_bg_image] and [member texture_rim] respectively.
+}
+
 enum DialogueNames {
 	NO, ## No names.
 	MONOLOGUE, ## Single speaker for each text line.
@@ -41,13 +49,45 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 
 @export_group("Settings")
 
+@export var design_mode: DesignMode = DesignMode.NO:
+	set(value):
+		design_mode = value
+		match value:
+			DesignMode.NO:
+				bg_image.hide()
+				bg_rim.hide()
+			DesignMode.IMAGE:
+				bg_image.show()
+				bg_rim.hide()
+			DesignMode.RIM:
+				bg_image.hide()
+				bg_rim.show()
+			DesignMode.BOTH:
+				bg_image.show()
+				bg_rim.show()
+
+@export var rim_scale: Vector2 = Vector2.ONE:
+	set(value):
+		rim_scale = value
+		bg_rim.scale = value
+	
+@export_subgroup("Backgroung textures", "bg_texture_")
+## Texture of the backgroung image of the dialog box.
+@export var bg_texture_image: Texture2D:
+	set(value):
+		bg_texture_image = value
+		bg_image.texture = value
+
+## Texture of the rim of the dialog box.
+@export var bg_texture_rim: Texture2D:
+	set(value):
+		bg_texture_rim = value
+		bg_rim.texture_under = value
+
+
 @export_group("Functionality")
 
 @export var continue_timer: float = 1.0 ## If [member input_use_trigger] is [code]false[/code], after this time speaking will continue.
-
-## Texture of the backgroung of the dialog box.
-@export var bg_texture: Texture2D:
-	set(value): $BackgroundImage.texture = value
 
 @export_subgroup("Text", "text_")
 ## Font for text in dialogues.
@@ -145,6 +185,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
 
 func _enter_tree() -> void:
+	
 	#Adding nodes
 	add_child(bg_image)
 	add_child(bg_rim)
@@ -190,14 +231,15 @@ func _enter_tree() -> void:
 	
 	face_dialoque.stretch_mode = TextureRect.STRETCH_KEEP
 	face_dialoque.set_v_size_flags(Control.SIZE_EXPAND_FILL)
-	face_dialoque.stretch_radio = 0
+	face_dialoque.size_flags_stretch_ratio = 0
+	
+	#Conecting signals
+	resized.connect(_resized.bind())
+
+func _resized(): bg_rim.pivot_offset = size / 2
 
 func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
 	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")
-
-func _on_resetting(use_names: DialogueNames, use_faces: bool, use_voices: DialogueVoices) -> void:
-	dialogue_use_names = use_names; dialogue_use_faces = use_faces; dialogue_use_voices = use_voices
-	face_dialoque.visible = dialogue_use_faces
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue():
