@@ -84,6 +84,31 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		bg_texture_rim = value
 		bg_rim.texture_under = value
 
+@export_subgroup("Name", "name_")
+
+## Name's vertical alignment.
+@export var name_aligment_v: VerticalAlignment = VerticalAlignment.VERTICAL_ALIGNMENT_TOP#:
+#set(value):
+#name_alignment_v = value
+#name.vertical_alignment = value
+
+## Name's horizontal alignment.
+@export var name_aligment_h: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT#:
+#set(value):
+#name_alignment_h = value
+#ne.horizontal_alignment = value
+
+## If [code]true[/code], Name's text will be uppercase.
+@export var name_uppercase: bool = false#:
+#set(value):
+#name_uppercase = value
+#name.uppercase = value
+
+@export_subgroup("Stretch ratios", "stretch_ratio_")
+
+@export_range(0, 1, 0.05, "or_greater", "hide_slider") var stretch_ratio_name: float
+
+
 
 @export_group("Functionality")
 
