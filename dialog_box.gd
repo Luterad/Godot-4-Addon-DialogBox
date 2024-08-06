@@ -184,7 +184,7 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		dialogue_voices = value
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
 
-func _enter_tree() -> void:
+func _enter_tree() -> void:#if get_children().size <= 0:
 	
 	#Adding nodes
 	add_child(bg_image)
