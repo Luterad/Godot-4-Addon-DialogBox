@@ -106,8 +106,11 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 
 @export_subgroup("Stretch ratios", "stretch_ratio_")
 
+## Stretching of area of name (in a [member stretch_ratio_name]:[member stretch_ratio_speaking] ratio)
 @export_range(0, 1, 0.05, "or_greater", "hide_slider") var stretch_ratio_name: float
 
+## Stretching of area of name (in a [member stretch_ratio_name]:[member stretch_ratio_speaking] ratio)
+@export_range(0, 1, 0.05, "or_greater", "hide_slider") var stretch_ratio_
 
 
 @export_group("Functionality")
