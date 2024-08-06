@@ -1,23 +1,22 @@
 @tool
-extends Control #EditorPlugin
+class_name DialogBox extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
 ## 
 ## DialogBox is custom class for fast creating game dialogues.[br]
-## For starting of speaking you'll need to set some variables, so here's the template:
+## For starting of speaking you'll need to set some variables, so here's the example:
 ## [codeblock]
-## emit_signal("resetting", DialogBox.DialogueNames.DIALOGUE, true, DialogBox.DialogueVoices.SINGLE)
 ## dialogue_lines = ["Hello!", "How are you?", "Pretty fine, thanks!"] as Array[String]
 ## dialogue_names = ["Jacob", "Jacob", "Alice"] as Array[String]
 ## dialogue_faces = [load("res://faces/j/happy.png"), load("res://faces/j/normal.png"), load("res://faces/a/happy.png")] as Array[CompressedTexture2D]
 ## dialogue_voices = [load("res://dialogue_voice.ogg")] as Array[AudioStream]
 ## start_dialogue()
 ## [/codeblock]
-class_name DialogBox
 
-signal resetting(use_names: DialogueNames, use_faces: bool, use_voices: DialogueVoices) ## Signal for changing settings of box.
-signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [input_use_trigger] is [code]true[/code]).
+signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [member input_use_trigger] is [code]true[/code]).
+signal line_ended ## Signal which emit's when dialoque line is ends.
 signal dialogue_ended ## Signal which emit's when dialogue is ends.
+signal dialogue_line_skipped ## Signal which emit's when [member input_skip] is pressed (only if [member input_use_skip] is [code]true[/code]).
 
 ## Enumeration for setting design mode of the Dialog box.
 enum DesignMode {
@@ -38,17 +37,18 @@ enum DialogueVoices {
 	EACH_LINE ## Several voice lines for each text line.[br]Recommendation: don't loop your [AudioStream] file.
 }
 
-var bg_image: TextureRect = TextureRect.new()
-var bg_rim: TextureProgressBar = TextureProgressBar.new()
-var speaker: VSplitContainer = VSplitContainer.new()
-var name_dialoque: Label = Label.new()
-var speaking: HSplitContainer = HSplitContainer.new()
-var lines_dialoque: RichTextLabel = RichTextLabel.new()
-var face_dialoque: TextureRect = TextureRect.new()
-var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
+var bg_image: TextureRect = TextureRect.new() ## Backgroung image of the dialog box.
+var bg_rim: TextureProgressBar = TextureProgressBar.new() ## Rim for rimming of dialog box.
+var speaker: VSplitContainer = VSplitContainer.new() ## Container of name of the character and dialoque lines, faces and voice, contained in [member speaking] container.
+var name_dialoque: Label = Label.new() ## Speaker's name.
+var speaking: HSplitContainer = HSplitContainer.new() ## Container of dialoque lines, faces and voice of character(s).
+var lines_dialoque: RichTextLabel = RichTextLabel.new() ## Node for showing main text of the dialoque.
+var face_dialoque: TextureRect = TextureRect.new() ## Node for showing setted face of the character in dialoque.
+var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for playing voice of character(s).
 
 @export_group("Settings")
 
+## Design of the box. Uses to show either background image or rim, either none or all of them.
 @export var design_mode: DesignMode = DesignMode.NO:
 	set(value):
 		design_mode = value
@@ -66,11 +66,12 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 				bg_image.show()
 				bg_rim.show()
 
+## Scale of box's rim.
 @export var rim_scale: Vector2 = Vector2.ONE:
 	set(value):
 		rim_scale = value
 		bg_rim.scale = value
-	
+
 @export_subgroup("Backgroung textures", "bg_texture_")
 ## Texture of the backgroung image of the dialog box.
 @export var bg_texture_image: Texture2D:
@@ -83,6 +84,66 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 	set(value):
 		bg_texture_rim = value
 		bg_rim.texture_under = value
+
+@export_subgroup("Name", "name_")
+
+## Name's vertical alignment.
+@export var name_alignment_v: VerticalAlignment = VERTICAL_ALIGNMENT_TOP:
+	set(value):
+		name_alignment_v = value
+		name_dialoque.vertical_alignment = value
+
+## Name's horizontal alignment.
+@export var name_alignment_h: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT:
+	set(value):
+		name_alignment_h = value
+		name_dialoque.horizontal_alignment = value
+
+## If [code]true[/code], Name's text will be uppercase.
+@export var name_uppercase: bool = false:
+	set(value):
+		name_uppercase = value
+		name_dialoque.uppercase = value
+
+@export_subgroup("Face", "face_")
+
+## Face's [member TextureRect.flip_h].
+@export var face_flip_horizontal: bool = false:
+	set(value):
+		face_flip_horizontal = value
+		face_dialoque.flip_h = value
+
+## Face's [member TextureRect.flip_v].
+@export var face_flip_vertical: bool = false:
+	set(value):
+		face_flip_vertical = value
+		face_dialoque.flip_v = value
+
+@export_subgroup("Stretch ratios", "stretch_ratio_")
+
+## Stretching of area of name (in a [member stretch_ratio_name]:[member stretch_ratio_speaking] ratio). If [code]0[/code], then name will take as much space as it needs.
+@export_range(0, 4, 0.05, "or_greater") var stretch_ratio_name: float = 0:
+	set(value):
+		stretch_ratio_name = value
+		name_dialoque.size_flags_stretch_ratio = value
+
+## Stretching of area of speaking area (dialoque lines & face) (in a [member stretch_ratio_name]:[member stretch_ratio_speaking] ratio). If [code]0[/code], then speaker area will take as much space as it needs.
+@export_range(0, 4, 0.05, "or_greater") var stretch_ratio_speaking: float = 1:
+	set(value):
+		stretch_ratio_speaking = value
+		speaking.size_flags_stretch_ratio = value
+
+## Stretching of area of lines area (in a [member stretch_ratio_lines]:[member stretch_ratio_face] ratio). If [code]0[/code], then lines will take as much space as it needs.
+@export_range(0, 4, 0.05, "or_greater") var stretch_ratio_lines: float = 1:
+	set(value):
+		stretch_ratio_lines = value
+		lines_dialoque.size_flags_stretch_ratio = value
+
+## Stretching of area of face area (in a [member stretch_ratio_lines]:[member stretch_ratio_face] ratio). If [code]0[/code], then face will take as much space as it needs.
+@export_range(0, 4, 0.05, "or_greater") var stretch_ratio_face: float = 0:
+	set(value):
+		stretch_ratio_face = value
+		face_dialoque.size_flags_stretch_ratio = value
 
 
 @export_group("Functionality")
@@ -101,16 +162,6 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		lines_dialoque.add_theme_font_override("bold_italics_font", value)
 		lines_dialoque.add_theme_font_override("mono_font", value)
 
-## Text size in pixels for text in dialogues.
-@export var text_size: int = 16:
-	set(value):
-		text_size = value
-		lines_dialoque.add_theme_font_size_override("normal_font_size", value)
-		lines_dialoque.add_theme_font_size_override("bold_font_size", value)
-		lines_dialoque.add_theme_font_size_override("italics_font_size", value)
-		lines_dialoque.add_theme_font_size_override("bold_italics_font_size", value)
-		lines_dialoque.add_theme_font_size_override("mono_font_size", value)
-
 ## Color for text in dialogues.
 @export var text_color: Color = Color.WHITE:
 	set(value): text_color = value; lines_dialoque.add_theme_color_override("default_color", value)
@@ -118,6 +169,15 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 ## Color for name in dialogues.
 @export var text_name_color: Color = Color.WHITE:
 	set(value): text_name_color = value; name_dialoque.add_theme_color_override("font_color", value)
+
+## Text size in pixels for text in dialogues.
+@export var text_size: int = 16:
+	set(value):
+		lines_dialoque.add_theme_font_size_override("normal_font_size", value)
+		lines_dialoque.add_theme_font_size_override("bold_font_size", value)
+		lines_dialoque.add_theme_font_size_override("italics_font_size", value)
+		lines_dialoque.add_theme_font_size_override("bold_italics_font_size", value)
+		lines_dialoque.add_theme_font_size_override("mono_font_size", value)
 
 ## Text size in pixels for name in dialogues.
 @export var text_name_size: int = 27:
@@ -130,12 +190,22 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 ## If [code]true[/code], you'll need to trigger action [member input_trigger] for continue speaking.
 @export var input_use_trigger: bool = false:
 	set(value):
+		if !value: input_trigger = &""
 		input_use_trigger = value
-		if !input_use_trigger: input_trigger = ""
 
 ## If setted, triggering of this action will continue speaking.
 @export var input_trigger: StringName = &"":
 	set(value): if input_use_trigger: input_trigger = value
+
+##If [code]true[/code], you'll be able to press action [member input_skip] to skip dialogue's animation and immediately end current line.
+@export var input_use_skip: bool = false:
+	set(value):
+		if !value: input_skip = &""
+		input_use_skip = value
+
+##If setted, triggering of this action will skip dialogue's animation and immediately end current line.[br][b]Must[/b] be build-in action.
+@export var input_skip: StringName = &"":
+	set(value): if input_use_skip: input_skip = value
 
 @export_subgroup("Dialogue", "dialogue_")
 ## Text lines.
@@ -185,7 +255,6 @@ var voice_dialoque: AudioStreamPlayer = AudioStreamPlayer.new()
 		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
 
 func _enter_tree() -> void:
-	
 	#Adding nodes
 	add_child(bg_image)
 	add_child(bg_rim)
@@ -207,9 +276,9 @@ func _enter_tree() -> void:
 	voice_dialoque.name = "Voice"
 	
 	#Undeniable settings
-	bg_image.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_image.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	
-	bg_rim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rim.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	bg_rim.nine_patch_stretch = true
 	bg_rim.stretch_margin_left = 15
 	bg_rim.stretch_margin_top = 15
@@ -217,7 +286,7 @@ func _enter_tree() -> void:
 	bg_rim.stretch_margin_bottom = 15
 	
 	speaker.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
-	speaker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	speaker.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	
 	name_dialoque.set_v_size_flags(Control.SIZE_EXPAND_FILL)
 	name_dialoque.size_flags_stretch_ratio = 0
@@ -238,8 +307,12 @@ func _enter_tree() -> void:
 
 func _resized(): bg_rim.pivot_offset = size / 2
 
-func _input(event: InputEvent) -> void: if input_use_trigger and input_trigger != "":
-	if InputMap.action_get_events(input_trigger)[0].as_text() == event.as_text(): emit_signal("trigger_pressed")
+func _process(delta: float) -> void:
+	if input_use_trigger and input_trigger != &"" and Input.is_action_just_pressed(input_trigger): emit_signal("trigger_pressed")
+	if input_use_skip and input_skip != &"" and Input.is_action_just_pressed(input_skip):
+		if lines_dialoque.visible_characters > 1 and lines_dialoque.visible_ratio < 1:
+			emit_signal("dialogue_line_skipped")
+			lines_dialoque.visible_ratio = 1
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue():
@@ -251,7 +324,6 @@ func start_dialogue():
 		lines_dialoque.text = line
 		lines_dialoque.visible_characters = 0
 		if dialogue_use_faces: face_dialoque.texture = dialogue_faces[frame]
-#		if dialogue_use_names != DialogueNames.NO:
 		match dialogue_use_names:
 			DialogueNames.MONOLOGUE: name_dialoque.text = dialogue_names[0]
 			DialogueNames.DIALOGUE: name_dialoque.text = dialogue_names[frame]
@@ -268,6 +340,7 @@ func start_dialogue():
 		#Transition
 		if input_use_trigger: await self.trigger_pressed
 		else: await get_tree().create_timer(continue_timer).timeout
+		emit_signal("line_ended")
 		frame += 1
 	voice_dialoque.playing = false
 	voice_dialoque.stream = null
