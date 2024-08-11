@@ -1,4 +1,5 @@
 @tool
+@icon("res://addons/Dialogbox/icon.png")
 class_name DialogBox extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
