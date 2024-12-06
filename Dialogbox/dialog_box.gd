@@ -1,18 +1,11 @@
 @tool
-@icon("res://addons/Dialogbox/icon.png")
+@icon("res://addons/Godot-4-Addon-DialogBox/Dialogbox/icon.png")
 class_name DialogBox extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
 ## 
 ## DialogBox is custom class for fast creating game dialogues.[br]
-## For starting of speaking you'll need to set some variables, so here's the example:
-## [codeblock]
-## dialogue_lines = ["Hello!", "How are you?", "Pretty fine, thanks!"] as Array[String]
-## dialogue_names = ["Jacob", "Jacob", "Alice"] as Array[String]
-## dialogue_faces = [load("res://faces/j/happy.png"), load("res://faces/j/normal.png"), load("res://faces/a/happy.png")] as Array[CompressedTexture2D]
-## dialogue_voices = [load("res://dialogue_voice.ogg")] as Array[AudioStream]
-## start_dialogue()
-## [/codeblock]
+## For starting of speaking you'll need to set some dialogues in [code]Dialogue[/code] subgroup via redactor.
 
 signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [member input_use_trigger] is [code]true[/code]).
 signal line_ended ## Signal which emit's when dialogue line is ends.
@@ -25,17 +18,6 @@ enum DesignMode {
 	IMAGE, ## Adds background image for box which texture sets in [member texture_bg_image].
 	RIM, ## Adds rim around box which texture sets in [member texture_rim]
 	BOTH ## Adds both background image and rim for box which textures sets in [member texture_bg_image] and [member texture_rim] respectively.
-}
-
-enum DialogueNames {
-	NO, ## No names.
-	MONOLOGUE, ## Single speaker for each text line.
-	DIALOGUE ## Two and more speakers for text lines.
-}
-enum DialogueVoices {
-	NO, ## No voice lines.
-	SINGLE, ## Single voice line for each text line.[br]Recommendation: loop your [AudioStream] file.
-	EACH_LINE ## Several voice lines for each text line.[br]Recommendation: don't loop your [AudioStream] file.
 }
 
 var bg_image: TextureRect = TextureRect.new() ## Backgroung image of the dialog box.
@@ -190,7 +172,7 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 @export var text_characters_per_second: int = 10 ## Amount of characters (symbols) showed per second.
 @export var text_speed: float = 1.0 ## Speed scale for text lines in dialogues.
 
-@export_subgroup("Input", "input_")
+@export_subgroup("Inputs", "input_")
 ## If [code]true[/code], you'll need to trigger action [member input_trigger] for continue speaking.
 @export var input_use_trigger: bool = false:
 	set(value):
@@ -213,62 +195,13 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 
 @export_subgroup("Dialogue", "dialogue_")
 ## Text lines.
-@export var dialogue_lines: Array[DialoguesLines]# = []:
-#	set(value):
-#		dialogue_lines = value
-#		if dialogue_use_names == DialogueNames.DIALOGUE: dialogue_names.resize(dialogue_lines.size())
-#		if dialogue_use_faces: dialogue_faces.resize(dialogue_lines.size())
-#		if dialogue_use_voices == DialogueVoices.EACH_LINE: dialogue_voices.resize(dialogue_lines.size())
-
-## If [code]not DialogueNames.NO[/code], you'll see speaker's name.
-@export var dialogue_use_names: DialogueNames = DialogueNames.NO:
-	set(value):
-		dialogue_use_names = value
-		match value:
-			DialogueNames.NO: dialogue_names.clear()
-			DialogueNames.MONOLOGUE: dialogue_names.resize(1)
-
-## If [member dialogue_use_names] is [code]not DialogueNames.NO[/code] and setted for current frame, shows speaker's name. More in [enum DialogueNames].
-@export var dialogue_names: Array[DialoguesNames] = []:
-	set(value): if dialogue_use_names != DialogueNames.NO:
-		dialogue_names = value
-		if dialogue_use_names == DialogueNames.MONOLOGUE: dialogue_names.resize(1)
-
-## If [code]true[/code], you'll see speaker's face if setted on current frame in [member dialogue_faces].
-@export var dialogue_use_faces: bool = false:
-	set(value):
-		dialogue_use_faces = value
-		if !dialogue_use_faces and dialogue_faces.size() > 0: dialogue_faces.clear()
-
-## If [member dialogue_use_faces] is [code]true[/code] and setted for current frame, shows speaker's face.
-@export var dialogue_faces: Array[DialoguesFaces] = []:
-	set(value): if dialogue_use_faces: dialogue_faces = value
-
-## If [code]not DialogueVoices.NO[/code], you'll hear voice of speaker if setted in [member dialogue_voices].
-@export var dialogue_use_voices: DialogueVoices = DialogueVoices.NO:
-	set(value):
-		dialogue_use_voices = value
-		match value:
-			DialogueVoices.NO: dialogue_voices.clear()
-			DialogueVoices.SINGLE: dialogue_voices.resize(1)
-
-## If [member dialogue_use_voices] is [code]not DialogueVoices.NO[/code] and setted for current frame, starts the voice of the speaker. More in [enum DialogueVoices].
-@export var dialogue_voices: Array[DialoguesVoices] = []:
-	set(value): if dialogue_use_voices != DialogueVoices.NO:
-		dialogue_voices = value
-		if dialogue_use_voices == DialogueVoices.SINGLE: dialogue_voices.resize(1)
-
-@export_subgroup("dialogue branching", "br_")
+@export var dialogue_lines: Array[DialoguesLines]
+@export var dialogue_names: Array[DialoguesNames]
+@export var dialogue_faces: Array[DialoguesFaces]
+@export var dialogue_voices: Array[DialoguesVoices]
 
 ## If [code]true[/code], adds branching.[br]Adds exetnal unit in active dialogue members that allows you to customize question's style.
-@export var br_use: bool:
-	set(value): if br_use != value:
-		br_use = value
-		if value:
-			dialogue_lines.append("")
-			dialogue_names.append("")
-			dialogue_faces.append(null)
-			dialogue_voices.append(null)
+#@export var dialogue_use_branching: bool
 
 func _enter_tree() -> void:
 	#Adding nodes
@@ -324,50 +257,52 @@ func _enter_tree() -> void:
 func _resized(): bg_rim.pivot_offset = size / 2
 
 func _process(delta: float) -> void:
-	if input_use_trigger and input_trigger != &"" and Input.is_action_just_pressed(input_trigger): emit_signal("trigger_pressed")
+	if input_use_trigger and input_trigger != &"" and Input.is_action_just_pressed(input_trigger): trigger_pressed.emit()
 	if input_use_skip and input_skip != &"" and Input.is_action_just_pressed(input_skip):
 		if lines_dialogue.visible_characters > 1 and lines_dialogue.visible_ratio < 1:
-			emit_signal("dialogue_line_skipped")
+			dialogue_line_skipped.emit()
 			lines_dialogue.visible_ratio = 1
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
-func start_dialogue(id: int):
+func start_dialogue(id: int = 0):
+	show()
 	var frame: int = 0
-	var lines: Array[String]
-	var names: Array[String]
-	var faces: Array[CompressedTexture2D]
-	var voices: Array[AudioStream]
+	var lines: DialoguesLines
+	var names: DialoguesNames
+	var faces: DialoguesFaces
+	var voices: DialoguesVoices
 	name_dialogue.text = ""
 	
 	#Searching needed dialogue
 	for dialogue in dialogue_lines:
 		if dialogue.id == id:
-			lines = dialogue.lines
+			lines = dialogue
 			break
 	for _name in dialogue_names:
 		if _name.id == id:
-			names = _name.names
+			names = _name
 			break
 	for face in dialogue_faces:
 		if face.id == id:
-			faces = face.faces
+			faces = face
 			break
 	for voice in dialogue_voices:
 		if voice.id == id:
-			voices = voice.voices
+			voices = voice
+			break
 	
-	for line in lines:
+	for line in lines.lines:
 		#Preparing
 		lines_dialogue.text = line
 		lines_dialogue.visible_characters = 0
-		if dialogue_use_faces: face_dialogue.texture = faces[frame]
-		match dialogue_use_names:
-			DialogueNames.MONOLOGUE: name_dialogue.text = names[0]
-			DialogueNames.DIALOGUE: name_dialogue.text = names[frame]
-		match dialogue_use_voices:
-			DialogueVoices.NO: voice_dialogue.stream = null
-			DialogueVoices.SINGLE: voice_dialogue.stream = voices[0]
-			DialogueVoices.EACH_LINE: voice_dialogue.stream = voices[frame]
+		if faces && faces.use: face_dialogue.texture = faces.faces[frame]
+		if names: match names.dialogue_type:
+			DialoguesNames.DialogueNames.MONOLOGUE: name_dialogue.text = names.names[0]
+			DialoguesNames.DialogueNames.DIALOGUE: name_dialogue.text = names.names[frame]
+		if voices: match voices.use:
+			DialoguesVoices.DialogueVoices.NO: voice_dialogue.stream = null
+			DialoguesVoices.DialogueVoices.SINGLE: voice_dialogue.stream = voices.voices[0]
+			DialoguesVoices.DialogueVoices.EACH_LINE: voice_dialogue.stream = voices.voices[frame]
 		#Printing
 		voice_dialogue.playing = true
 		print("\"", name_dialogue.text, "\": \"", line, "\"")
@@ -382,10 +317,12 @@ func start_dialogue(id: int):
 		#Transition
 		if input_use_trigger: await self.trigger_pressed
 		else: await get_tree().create_timer(continue_timer).timeout
-		emit_signal("line_ended")
+		line_ended.emit()
 		frame += 1
 	voice_dialogue.playing = false
 	voice_dialogue.stream = null
 	face_dialogue.texture = null
 	name_dialogue.text = ""
 	lines_dialogue.text = ""
+	dialogue_ended.emit()
+	hide()
