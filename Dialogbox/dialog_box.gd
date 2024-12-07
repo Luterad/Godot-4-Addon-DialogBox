@@ -1,18 +1,16 @@
 @tool
 @icon("res://addons/Godot-4-Addon-DialogBox/Dialogbox/icon.png")
-class_name DialogBox extends Control
+class_name DialogBox extends Control #EditorPlugin
 
 ## Custom class for easy dialogues.
 ## 
 ## DialogBox is custom class for fast creating game dialogues.[br]
 ## For starting of speaking you'll need to set some dialogues in [code]Dialogue[/code] subgroup via redactor.
 
-signal trigger_pressed ## Emit's when [input_trigger] is pressed (only if [member input_use_trigger] is [code]true[/code]).
-signal line_ended ## Emit's when dialogue line is ends.
-signal branch_variant_selected(dialogue_id: int, variant_id: int) ## Emit's when branch variant is selected and basicly used for emiting other dialogues via idenifying them with IDs.
-signal dialogue_started(id: int) ## Emit's when dialogue is starts.
-signal dialogue_ended ## Emit's when dialogue is ends.
-signal dialogue_line_skipped ## Emit's when [member input_skip] is pressed (only if [member input_use_skip] is [code]true[/code]).
+signal trigger_pressed ## Signal which emit's when [input_trigger] is pressed (only if [member input_use_trigger] is [code]true[/code]).
+signal line_ended ## Signal which emit's when dialogue line is ends.
+signal dialogue_ended ## Signal which emit's when dialogue is ends.
+signal dialogue_line_skipped ## Signal which emit's when [member input_skip] is pressed (only if [member input_use_skip] is [code]true[/code]).
 
 ## Enumeration for setting design mode of the Dialog box.
 enum DesignMode {
@@ -27,9 +25,7 @@ var bg_rim: TextureProgressBar = TextureProgressBar.new() ## Rim for rimming of 
 var speaker: VSplitContainer = VSplitContainer.new() ## Container of name of the character and dialogue lines, faces and voice, contained in [member speaking] container.
 var name_dialogue: Label = Label.new() ## Speaker's name.
 var speaking: HSplitContainer = HSplitContainer.new() ## Container of dialogue lines, faces and voice of character(s).
-var branching: VSplitContainer = VSplitContainer.new()
 var lines_dialogue: RichTextLabel = RichTextLabel.new() ## Node for showing main text of the dialogue.
-var branch_variants: VBoxContainer = VBoxContainer.new()
 var face_dialogue: TextureRect = TextureRect.new() ## Node for showing setted face of the character in dialogue.
 var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for playing voice of character(s).
 
@@ -204,6 +200,9 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 @export var dialogue_faces: Array[DialoguesFaces]
 @export var dialogue_voices: Array[DialoguesVoices]
 
+## If [code]true[/code], adds branching.[br]Adds exetnal unit in active dialogue members that allows you to customize question's style.
+#@export var dialogue_use_branching: bool
+
 func _enter_tree() -> void:
 	#Adding nodes
 	add_child(bg_image)
@@ -211,9 +210,7 @@ func _enter_tree() -> void:
 	add_child(speaker)
 	speaker.add_child(name_dialogue)
 	speaker.add_child(speaking)
-	speaking.add_child(branching)
-	branching.add_child(lines_dialogue)
-	branching.add_child(branch_variants)
+	speaking.add_child(lines_dialogue)
 	speaking.add_child(face_dialogue)
 	speaking.add_child(voice_dialogue)
 	
@@ -246,16 +243,9 @@ func _enter_tree() -> void:
 	speaking.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
 	speaking.set_v_size_flags(Control.SIZE_EXPAND_FILL)
 	
-	branching.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
-	branching.set_h_size_flags(Control.SIZE_EXPAND_FILL)
-	
 	lines_dialogue.bbcode_enabled = true
 	lines_dialogue.scroll_active = false
-	lines_dialogue.set_v_size_flags(Control.SIZE_EXPAND_FILL)
-	lines_dialogue.size_flags_stretch_ratio = 1
-	
-	branch_variants.size_flags_stretch_ratio = 0
-	branch_variants.set_v_size_flags(Control.SIZE_EXPAND_FILL)
+	lines_dialogue.set_h_size_flags(Control.SIZE_EXPAND_FILL)
 	
 	face_dialogue.stretch_mode = TextureRect.STRETCH_KEEP
 	face_dialogue.set_v_size_flags(Control.SIZE_EXPAND_FILL)
@@ -275,8 +265,6 @@ func _process(delta: float) -> void:
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue(id: int = 0):
-	await get_tree().process_frame
-	dialogue_started.emit(id)
 	show()
 	var frame: int = 0
 	var lines: DialoguesLines
@@ -303,17 +291,6 @@ func start_dialogue(id: int = 0):
 			voices = voice
 			break
 	
-	if lines.branching_use: for variant in lines.branching_variants:
-			var button: Button = Button.new()
-			branch_variants.add_child(button)
-			button.disabled = true
-			button.name = "Variant1"
-			button.text = variant.text
-			button.editor_description = str(id)
-			button.pressed.connect(_variant_selected.bind(button, variant.output_id))
-			button.hide()
-			button = null
-	
 	for line in lines.lines:
 		#Preparing
 		lines_dialogue.text = line
@@ -338,19 +315,10 @@ func start_dialogue(id: int = 0):
 				lines_dialogue.visible_characters += 1
 				await get_tree().create_timer(1/text_characters_per_second*text_speed).timeout
 		#Transition
-		if lines.lines.rfind(line) + 1 == lines.lines.size() && lines.branching_use:
-			for button in branch_variants.get_children():
-				button.show()
-				button.disabled = false
-			await branch_variant_selected
-		else:
-			if input_use_trigger: await self.trigger_pressed
-			else: await get_tree().create_timer(continue_timer).timeout
+		if input_use_trigger: await self.trigger_pressed
+		else: await get_tree().create_timer(continue_timer).timeout
 		line_ended.emit()
 		frame += 1
-	
-	for variant in branch_variants.get_children(): variant.queue_free()
-	
 	voice_dialogue.playing = false
 	voice_dialogue.stream = null
 	face_dialogue.texture = null
@@ -358,7 +326,3 @@ func start_dialogue(id: int = 0):
 	lines_dialogue.text = ""
 	dialogue_ended.emit()
 	hide()
-
-func _variant_selected(button: Button, var_id: int) -> void:
-	print("Player: \"%s\"" % button.text)
-	branch_variant_selected.emit(button.editor_description.to_int(), var_id)
