@@ -1,5 +1,5 @@
 @tool
-@icon("res://addons/Dialogbox/icon.png")
+@icon("res://addons/Godot-4-Addon-DialogBox/Dialogbox/icon.png")
 class_name DialogBox extends Control
 
 ## Custom class for easy dialogues.
