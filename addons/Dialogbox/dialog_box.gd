@@ -163,6 +163,7 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 ## Text size in pixels for text in dialogues.
 @export var text_size: int = 16:
 	set(value):
+		text_size = value
 		lines_dialogue.add_theme_font_size_override("normal_font_size", value)
 		lines_dialogue.add_theme_font_size_override("bold_font_size", value)
 		lines_dialogue.add_theme_font_size_override("italics_font_size", value)
