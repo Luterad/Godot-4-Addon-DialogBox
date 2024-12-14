@@ -22,7 +22,7 @@ enum DesignMode {
 	BOTH ## Adds both background image and rim for box which textures sets in [member texture_bg_image] and [member texture_rim] respectively.
 }
 
-var bg_image: TextureRect = TextureRect.new() ## Backgroung image of the dialog box.
+var bg_image: TextureRect = TextureRect.new() ## Background image of the dialog box.
 var bg_rim: TextureProgressBar = TextureProgressBar.new() ## Rim for rimming of dialog box.
 var speaker: VSplitContainer = VSplitContainer.new() ## Container of name of the character and dialogue lines, faces and voice, contained in [member speaking] container.
 var name_dialogue: Label = Label.new() ## Speaker's name.
@@ -62,8 +62,8 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 ## Allows text to use translation if [code]true[/code].
 @export var use_translation: bool = false
 
-@export_subgroup("Backgroung textures", "bg_texture_")
-## Texture of the backgroung image of the dialog box.
+@export_subgroup("Background textures", "bg_texture_")
+## Texture of the background image of the dialog box.
 @export var bg_texture_image: Texture2D:
 	set(value):
 		bg_texture_image = value
