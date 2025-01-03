@@ -270,8 +270,10 @@ func _enter_tree() -> void:
 func _resized(): bg_rim.pivot_offset = size / 2
 
 func _process(delta: float) -> void:
-	if input_use_trigger and input_trigger != &"" and Input.is_action_just_pressed(input_trigger): trigger_pressed.emit()
-	if input_use_skip and input_skip != &"" and Input.is_action_just_pressed(input_skip):
+	if input_use_trigger and input_trigger != &"" and InputMap.has_action(input_trigger):
+		if Input.is_action_just_pressed(input_trigger):
+			trigger_pressed.emit()
+	if input_use_skip and input_skip != &"" and InputMap.has_action(input_skip): if Input.is_action_just_pressed(input_skip):
 		if lines_dialogue.visible_characters > 1 and lines_dialogue.visible_ratio < 1:
 			dialogue_line_skipped.emit()
 			lines_dialogue.visible_ratio = 1
