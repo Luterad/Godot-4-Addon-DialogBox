@@ -161,7 +161,7 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 	set(value): text_name_color = value; name_dialogue.add_theme_color_override("font_color", value)
 
 ## Text size in pixels for text in dialogues.
-@export var text_size: int = 16:
+@export var text_size: int:
 	set(value):
 		text_size = value
 		lines_dialogue.add_theme_font_size_override("normal_font_size", value)
@@ -171,8 +171,10 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 		lines_dialogue.add_theme_font_size_override("mono_font_size", value)
 
 ## Text size in pixels for name in dialogues.
-@export var text_name_size: int = 27:
-	set(value): text_name_size = value; name_dialogue.add_theme_font_size_override("font_size", value)
+@export var text_name_size: int:
+	set(value):
+		text_name_size = value
+		name_dialogue.add_theme_font_size_override("font_size", value)
 
 @export var text_characters_per_second: int = 10 ## Amount of characters (symbols) showed per second.
 @export var text_speed: float = 1.0 ## Speed scale for text lines in dialogues.
