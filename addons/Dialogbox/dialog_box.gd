@@ -5,7 +5,7 @@ class_name DialogBox extends Control
 ## Custom class for easy dialogues.
 ## 
 ## DialogBox is custom class for fast creating game dialogues.[br]
-## For starting of speaking you'll need to set some dialogues in [code]Dialogue[/code] subgroup via redactor.
+## For starting of speaking you'll need to set some dialogues in [member dialogues] via redactor.
 
 signal trigger_pressed ## Emit's when [input_trigger] is pressed (only if [member input_use_trigger] is [code]true[/code]).
 signal line_ended ## Emit's when dialogue line is ends.
@@ -200,12 +200,7 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 @export var input_skip: StringName = &"":
 	set(value): if input_use_skip: input_skip = value
 
-@export_subgroup("Dialogue", "dialogue_")
-## Text lines.
-@export var dialogue_lines: Array[DialoguesLines]
-@export var dialogue_names: Array[DialoguesNames]
-@export var dialogue_faces: Array[DialoguesFaces]
-@export var dialogue_voices: Array[DialoguesVoices]
+@export var dialogues: Array[Dialog] ## Contains every dualogue.
 
 func _enter_tree() -> void:
 	#Adding nodes
@@ -271,44 +266,24 @@ func _resized(): bg_rim.pivot_offset = size / 2
 
 func _process(delta: float) -> void:
 	if input_use_trigger and input_trigger != &"" and InputMap.has_action(input_trigger):
-		if Input.is_action_just_pressed(input_trigger):
-			trigger_pressed.emit()
-	if input_use_skip and input_skip != &"" and InputMap.has_action(input_skip): if Input.is_action_just_pressed(input_skip):
-		if lines_dialogue.visible_characters > 1 and lines_dialogue.visible_ratio < 1:
-			dialogue_line_skipped.emit()
-			lines_dialogue.visible_ratio = 1
+		if Input.is_action_just_pressed(input_trigger): trigger_pressed.emit()
+	if input_use_skip and input_skip != &"" and InputMap.has_action(input_skip):
+		if Input.is_action_just_pressed(input_skip):
+			if lines_dialogue.visible_characters > 1 and lines_dialogue.visible_ratio < 1:
+				dialogue_line_skipped.emit()
+				lines_dialogue.visible_ratio = 1
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue(id: int = 0):
 	await get_tree().process_frame
 	dialogue_started.emit(id)
 	show()
+	var dialogue: Dialog
 	var frame: int = 0
-	var lines: DialoguesLines
-	var names: DialoguesNames
-	var faces: DialoguesFaces
-	var voices: DialoguesVoices
 	name_dialogue.text = ""
 	
-	#Searching needed dialogue
-	for dialogue in dialogue_lines:
-		if dialogue.id == id:
-			lines = dialogue
-			break
-	for _name in dialogue_names:
-		if _name.id == id:
-			names = _name
-			break
-	for face in dialogue_faces:
-		if face.id == id:
-			faces = face
-			break
-	for voice in dialogue_voices:
-		if voice.id == id:
-			voices = voice
-			break
-	
-	if lines.branching_use: for variant in lines.branching_variants:
+	for d in dialogues: if d.id == id: dialogue = d; break
+	if dialogue.branching_use: for variant in dialogue.branching_variants:
 			var button: Button = Button.new()
 			branch_variants.add_child(button)
 			button.disabled = true
@@ -319,31 +294,26 @@ func start_dialogue(id: int = 0):
 			button.hide()
 			button = null
 	
-	for line in lines.lines:
+	for unit in dialogue.containment:
 		#Preparing
-		lines_dialogue.text = line
+		lines_dialogue.text = unit.line
 		lines_dialogue.visible_characters = 0
-		if faces && faces.use: face_dialogue.texture = faces.faces[frame]
-		if names: match names.dialogue_type:
-			DialoguesNames.DialogueNames.MONOLOGUE: name_dialogue.text = names.names[0]
-			DialoguesNames.DialogueNames.DIALOGUE: name_dialogue.text = names.names[frame]
-		if voices: match voices.use:
-			DialoguesVoices.DialogueVoices.NO: voice_dialogue.stream = null
-			DialoguesVoices.DialogueVoices.SINGLE: voice_dialogue.stream = voices.voices[0]
-			DialoguesVoices.DialogueVoices.EACH_LINE: voice_dialogue.stream = voices.voices[frame]
+		if unit.face: face_dialogue.texture = unit.face
+		if unit.name: name_dialogue.text = unit.name
+		if unit.voice: voice_dialogue.stream = unit.voice
 		#Printing
 		voice_dialogue.playing = true
-		print("\"", name_dialogue.text, "\": \"", line, "\"")
+		print("\"", name_dialogue.text, "\": \"", unit.line, "\"")
 		if use_translation:
-			for char in String(TranslationServer.translate(line)).split():
+			for char in String(TranslationServer.translate(unit.line)).split():
 				lines_dialogue.visible_characters += 1
 				await get_tree().create_timer(1/text_characters_per_second*text_speed).timeout
 		else:
-			for char in line.split():
+			for char in unit.line.split():
 				lines_dialogue.visible_characters += 1
 				await get_tree().create_timer(1/text_characters_per_second*text_speed).timeout
 		#Transition
-		if lines.lines.rfind(line) + 1 == lines.lines.size() && lines.branching_use:
+		if dialogue.containment[-1] == unit && dialogue.branching_use:
 			for button in branch_variants.get_children():
 				button.show()
 				button.disabled = false
