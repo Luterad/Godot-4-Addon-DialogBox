@@ -11,8 +11,8 @@ signal trigger_pressed ## Emit's when [input_trigger] is pressed (only if [membe
 signal line_ended ## Emit's when dialogue line is ends.
 signal branch_variant_selected(dialogue_id: int, variant_id: int) ## Emit's when branch variant is selected and basicly used for emiting other dialogues via idenifying them with IDs.
 signal dialogue_started(id: int) ## Emit's when dialogue is starts.
-signal dialogue_ended ## Emit's when dialogue is ends.
-signal dialogue_line_skipped ## Emit's when [member input_skip] is pressed (only if [member input_use_skip] is [code]true[/code]).
+signal dialogue_ended(id: int) ## Emit's when dialogue is ends.
+signal dialogue_line_skipped(dialog_id: int) ## Emit's when [member input_skip] is pressed (only if [member input_use_skip] is [code]true[/code]).
 
 ## Enumeration for setting design mode of the Dialog box.
 enum DesignMode {
@@ -21,18 +21,18 @@ enum DesignMode {
 	RIM, ## Adds rim around box which texture sets in [member texture_rim]
 	BOTH ## Adds both background image and rim for box which textures sets in [member texture_bg_image] and [member texture_rim] respectively.
 }
-
+#region Nodes
 var bg_image: TextureRect = TextureRect.new() ## Background image of the dialog box.
 var bg_rim: TextureProgressBar = TextureProgressBar.new() ## Rim for rimming of dialog box.
 var speaker: VSplitContainer = VSplitContainer.new() ## Container of name of the character and dialogue lines, faces and voice, contained in [member speaking] container.
 var name_dialogue: Label = Label.new() ## Speaker's name.
-var speaking: HSplitContainer = HSplitContainer.new() ## Container of dialogue lines, faces and voice of character(s).
-var branching: VSplitContainer = VSplitContainer.new()
+var speaking: HSplitContainer = HSplitContainer.new() ## Container of dialogue lines, faces and voices of character(s).
+var branching: VSplitContainer = VSplitContainer.new() ## Container of dialogue lines and branch variants.
 var lines_dialogue: RichTextLabel = RichTextLabel.new() ## Node for showing main text of the dialogue.
-var branch_variants: VBoxContainer = VBoxContainer.new()
+var branch_variants: VBoxContainer = VBoxContainer.new() ## Container of branching variants.
 var face_dialogue: TextureRect = TextureRect.new() ## Node for showing setted face of the character in dialogue.
 var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for playing voice of character(s).
-
+#endregion
 @export_group("Settings")
 
 ## Design of the box. Uses to show either background image or rim, either none or all of them.
@@ -53,15 +53,10 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 				bg_image.show()
 				bg_rim.show()
 
-## Scale of box's rim.
-@export var rim_scale: Vector2 = Vector2.ONE:
-	set(value):
-		rim_scale = value
-		bg_rim.scale = value
-
 ## Allows text to use translation if [code]true[/code].
 @export var use_translation: bool = false
 
+#region Background settings
 @export_subgroup("Background textures", "bg_texture_")
 ## Texture of the background image of the dialog box.
 @export var bg_texture_image: Texture2D:
@@ -75,6 +70,13 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 		bg_texture_rim = value
 		bg_rim.texture_under = value
 
+## Scale of box's rim.
+@export_custom(PROPERTY_HINT_LINK, "") var bg_texture_rim_scale: Vector2 = Vector2.ONE:
+	set(value):
+		bg_texture_rim_scale = value
+		bg_rim.scale = value
+#endregion
+#region Name settings
 @export_subgroup("Name", "name_")
 
 ## Name's vertical alignment.
@@ -94,7 +96,8 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 	set(value):
 		name_uppercase = value
 		name_dialogue.uppercase = value
-
+#endregion
+#region Face settings
 @export_subgroup("Face", "face_")
 
 ## Face's [member TextureRect.flip_h].
@@ -108,7 +111,8 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 	set(value):
 		face_flip_vertical = value
 		face_dialogue.flip_v = value
-
+#endregion
+#region Stretching variables
 @export_subgroup("Stretch ratios", "stretch_ratio_")
 
 ## Stretching of area of name (in a [member stretch_ratio_name]:[member stretch_ratio_speaking] ratio). If [code]0[/code], then name will take as much space as it needs.
@@ -134,12 +138,13 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 	set(value):
 		stretch_ratio_face = value
 		face_dialogue.size_flags_stretch_ratio = value
-
+#endregion
 
 @export_group("Functionality")
 
 @export var continue_timer: float = 1.0 ## If [member input_use_trigger] is [code]false[/code], after this time speaking will continue.
 
+#region Text-related variables
 @export_subgroup("Text", "text_")
 ## Font for text in dialogues.
 @export var text_font: Font = SystemFont.new():
@@ -178,7 +183,8 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 
 @export var text_characters_per_second: int = 10 ## Amount of characters (symbols) showed per second.
 @export var text_speed: float = 1.0 ## Speed scale for text lines in dialogues.
-
+#endregion
+#region Input variables
 @export_subgroup("Inputs", "input_")
 ## If [code]true[/code], you'll need to trigger action [member input_trigger] for continue speaking.
 @export var input_use_trigger: bool = false:
@@ -199,11 +205,12 @@ var voice_dialogue: AudioStreamPlayer = AudioStreamPlayer.new() ## Node for play
 ##If setted, triggering of this action will skip dialogue's animation and immediately end current line.[br][b]Must[/b] be build-in action.
 @export var input_skip: StringName = &"":
 	set(value): if input_use_skip: input_skip = value
+#endregion
 
 @export var dialogues: Array[Dialog] ## Contains every dualogue.
 
 func _enter_tree() -> void:
-	#Adding nodes
+	#region Adding nodes
 	add_child(bg_image)
 	add_child(bg_rim)
 	add_child(speaker)
@@ -214,18 +221,20 @@ func _enter_tree() -> void:
 	branching.add_child(branch_variants)
 	speaking.add_child(face_dialogue)
 	speaking.add_child(voice_dialogue)
-	
-	#Naming nodes
+	#endregion
+	#region Naming nodes
 	bg_image.name = "BG Image"
 	bg_rim.name = "BG Rim"
 	speaker.name = "Speaker"
 	name_dialogue.name = "Name"
 	speaking.name = "Speaking"
+	branching.name = "Branching"
 	lines_dialogue.name = "Lines"
+	branch_variants.name = "Variants"
 	face_dialogue.name = "Face"
 	voice_dialogue.name = "Voice"
-	
-	#Undeniable settings
+	#endregion
+	#region Undeniable settings
 	bg_image.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	
 	bg_rim.set_anchors_preset(Control.PRESET_FULL_RECT, true)
@@ -240,6 +249,7 @@ func _enter_tree() -> void:
 	
 	name_dialogue.set_v_size_flags(Control.SIZE_EXPAND_FILL)
 	name_dialogue.size_flags_stretch_ratio = 0
+	name_dialogue.uppercase = name_uppercase
 	
 	speaking.dragger_visibility = SplitContainer.DRAGGER_HIDDEN_COLLAPSED
 	speaking.set_v_size_flags(Control.SIZE_EXPAND_FILL)
@@ -258,9 +268,10 @@ func _enter_tree() -> void:
 	face_dialogue.stretch_mode = TextureRect.STRETCH_KEEP
 	face_dialogue.set_v_size_flags(Control.SIZE_EXPAND_FILL)
 	face_dialogue.size_flags_stretch_ratio = 0
-	
-	#Conecting signals
+	#endregion
+	#region Conecting signals
 	resized.connect(_resized.bind())
+	#endregion
 
 func _resized(): bg_rim.pivot_offset = size / 2
 
@@ -275,6 +286,7 @@ func _process(delta: float) -> void:
 
 ## Function for showing text lines and other: [member dialogue_names], [member dialogue_faces], and [member dialogue_voices].
 func start_dialogue(id: int = 0):
+	#region Setuping
 	await get_tree().process_frame
 	dialogue_started.emit(id)
 	show()
@@ -293,15 +305,16 @@ func start_dialogue(id: int = 0):
 			button.pressed.connect(_variant_selected.bind(button, variant.output_id))
 			button.hide()
 			button = null
-	
+	#endregion
 	for unit in dialogue.containment:
-		#Preparing
+	#region Preparing
 		lines_dialogue.text = unit.line
 		lines_dialogue.visible_characters = 0
 		if unit.face: face_dialogue.texture = unit.face
 		if unit.name: name_dialogue.text = unit.name
 		if unit.voice: voice_dialogue.stream = unit.voice
-		#Printing
+	#endregion
+	#region Printing
 		voice_dialogue.playing = true
 		print("\"", name_dialogue.text, "\": \"", unit.line, "\"")
 		if use_translation:
@@ -312,18 +325,24 @@ func start_dialogue(id: int = 0):
 			for char in unit.line.split():
 				lines_dialogue.visible_characters += 1
 				await get_tree().create_timer(1/text_characters_per_second*text_speed).timeout
-		#Transition
+	#endregion
+	#region Transition
 		if dialogue.containment[-1] == unit && dialogue.branching_use:
 			for button in branch_variants.get_children():
 				button.show()
 				button.disabled = false
 			await branch_variant_selected
 		else:
-			if input_use_trigger: await self.trigger_pressed
-			else: await get_tree().create_timer(continue_timer).timeout
-		line_ended.emit()
+			if dialogue.voice_acting_mode == Dialog.VoiceActingMode.FULL && dialogue.voice_ending_sequence != Dialog.VoiceSequence.NO:
+				await voice_dialogue.finished
+				if dialogue.voice_ending_sequence == Dialog.VoiceSequence.TIMER_TRANSIT: await get_tree().create_timer(continue_timer).timeout
+			else:
+				if dialogue.voice_acting_mode == Dialog.VoiceActingMode.PARTICALLY: voice_dialogue.stop()
+				if input_use_trigger: await self.trigger_pressed
+				else: await get_tree().create_timer(continue_timer).timeout
+		line_ended.emit(id)
 		frame += 1
-	
+	#endregion
 	for variant in branch_variants.get_children(): variant.queue_free()
 	
 	voice_dialogue.playing = false
@@ -331,7 +350,7 @@ func start_dialogue(id: int = 0):
 	face_dialogue.texture = null
 	name_dialogue.text = ""
 	lines_dialogue.text = ""
-	dialogue_ended.emit()
+	dialogue_ended.emit(id)
 	hide()
 
 func _variant_selected(button: Button, var_id: int) -> void:
